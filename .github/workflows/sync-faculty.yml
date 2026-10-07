@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout my repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -24,34 +24,28 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Add faculty repository
+      - name: Fetch faculty repository
         run: |
           git remote add faculty https://github.com/ashishvirgo/FSD-CSE-15.git
           git fetch faculty main
 
-      - name: Save workflow
+      - name: Sync faculty files
         run: |
-          cp .github/workflows/sync-faculty.yml /tmp/sync-faculty.yml
+          git checkout faculty/main -- .
+          
+          # Keep this workflow file in your repository
+          git checkout HEAD -- .github/workflows/sync-faculty.yml
 
-      - name: Sync faculty code
+      - name: Commit changes
         run: |
-          git reset --hard faculty/main
-
-      - name: Restore workflow
-        run: |
-          mkdir -p .github/workflows
-          cp /tmp/sync-faculty.yml .github/workflows/sync-faculty.yml
-
-      - name: Commit sync workflow
-        run: |
-          git add .github/workflows/sync-faculty.yml
-
+          git add .
+          
           if git diff --cached --quiet; then
-            echo "No workflow changes"
+            echo "No new changes from faculty repository."
           else
-            git commit -m "chore: keep faculty sync workflow"
+            git commit -m "Sync latest faculty repository changes"
           fi
 
-      - name: Push synchronized code
+      - name: Push changes
         run: |
-          git push origin HEAD:main --force
+          git push origin main
