@@ -1,0 +1,57 @@
+name: Sync Faculty Repository
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout my repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Add faculty repository
+        run: |
+          git remote add faculty https://github.com/ashishvirgo/FSD-CSE-15.git
+          git fetch faculty main
+
+      - name: Save workflow
+        run: |
+          cp .github/workflows/sync-faculty.yml /tmp/sync-faculty.yml
+
+      - name: Sync faculty code
+        run: |
+          git reset --hard faculty/main
+
+      - name: Restore workflow
+        run: |
+          mkdir -p .github/workflows
+          cp /tmp/sync-faculty.yml .github/workflows/sync-faculty.yml
+
+      - name: Commit sync workflow
+        run: |
+          git add .github/workflows/sync-faculty.yml
+
+          if git diff --cached --quiet; then
+            echo "No workflow changes"
+          else
+            git commit -m "chore: keep faculty sync workflow"
+          fi
+
+      - name: Push synchronized code
+        run: |
+          git push origin HEAD:main --force
